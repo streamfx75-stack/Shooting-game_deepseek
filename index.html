@@ -181,6 +181,7 @@
         </p>
         <button id="startButton">ゲームスタート</button>
         <button id="pauseButton">ポーズ</button>
+        <button id="shootButton">発射 (タップ)</button>
     </div>
     
     <div id="gameMessage" class="game-message">
@@ -198,6 +199,7 @@
     const levelElement = document.getElementById('level');
     const startButton = document.getElementById('startButton');
     const pauseButton = document.getElementById('pauseButton');
+    const shootButton = document.getElementById('shootButton');
     const gameMessage = document.getElementById('gameMessage');
     const messageTitle = document.getElementById('messageTitle');
     const messageText = document.getElementById('messageText');
@@ -236,8 +238,10 @@
 
     window.addEventListener('keydown', (e) => {
         keys[e.key] = true;
+        keys[e.code] = true;
         
-        if (e.key === ' ' && game.running && !game.paused) {
+        // スペースキーの検出（key, code, keyCode全てで対応）
+        if ((e.key === ' ' || e.code === 'Space' || e.keyCode === 32) && game.running && !game.paused) {
             shootBullet();
             e.preventDefault();
         }
@@ -249,17 +253,19 @@
 
     window.addEventListener('keyup', (e) => {
         keys[e.key] = false;
+        keys[e.code] = false;
     });
 
     function handlePlayerMovement() {
         player.isMovingLeft = false;
         player.isMovingRight = false;
         
-        if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+        // 複数のキーコード形式に対応
+        if (keys['ArrowLeft'] || keys['a'] || keys['A'] || keys['KeyA']) {
             player.x -= player.speed;
             player.isMovingLeft = true;
         }
-        if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+        if (keys['ArrowRight'] || keys['d'] || keys['D'] || keys['KeyD']) {
             player.x += player.speed;
             player.isMovingRight = true;
         }
@@ -562,6 +568,34 @@
 
     startButton.addEventListener('click', startGame);
     pauseButton.addEventListener('click', togglePause);
+    
+    // タッチデバイス用の発射ボタン
+    shootButton.addEventListener('click', () => {
+        if (game.running && !game.paused) {
+            shootBullet();
+        }
+    });
+    
+    // タッチ操作での連続発射
+    let shootInterval = null;
+    shootButton.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (game.running && !game.paused) {
+            shootBullet();
+            shootInterval = setInterval(() => {
+                if (game.running && !game.paused) {
+                    shootBullet();
+                }
+            }, 100);
+        }
+    });
+    
+    shootButton.addEventListener('touchend', () => {
+        if (shootInterval) {
+            clearInterval(shootInterval);
+            shootInterval = null;
+        }
+    });
     
     messageButton.addEventListener('click', () => {
         if (game.gameOver) {
